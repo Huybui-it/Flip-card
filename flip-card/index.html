@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flip Card Challenge - Siêu Trình Duyệt Thẻ</title>
+    <title>FLIP CARD GAME</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;600;800&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div class="background-blobs">
         <div class="blob blob-1"></div>
@@ -18,8 +21,7 @@
 
     <main class="game-container">
         <header class="game-header">
-            <h1>Flip Card <span class="accent">Challenge</span></h1>
-            <p class="subtitle">Thử thách trí nhớ và kết nối tri thức</p>
+            <h1>Tìm kiếm <span class="accent">nửa kia</span></h1>
             <div class="game-controls">
                 <button id="start-btn" class="primary-btn">Bắt đầu trò chơi</button>
                 <div id="timer-display" class="timer-card hidden">
@@ -31,7 +33,7 @@
 
         <section class="game-board">
             <div class="column left-column">
-                <h2>Cột Trái</h2>
+                <h2>Tình huống</h2>
                 <div class="card-grid" id="left-grid">
                     <!-- Cards will be injected by JS -->
                 </div>
@@ -39,16 +41,14 @@
 
             <div class="column actions-column">
                 <div class="selection-status">
-                    <div class="select-indicator left-indicator" id="left-selected-label">Trái: ?</div>
+                    <div class="select-indicator left-indicator" id="left-selected-label">Tình Huống: ?</div>
                     <div class="connector"></div>
-                    <div class="select-indicator right-indicator" id="right-selected-label">Phải: ?</div>
+                    <div class="select-indicator right-indicator" id="right-selected-label">Chiến Lược: ?</div>
                 </div>
-                <button id="confirm-btn" class="confirm-btn hidden">Xác nhận</button>
-                <button id="finish-btn" class="finish-btn secondary-btn">Hoàn thành & So sánh</button>
             </div>
 
             <div class="column right-column">
-                <h2>Cột Phải</h2>
+                <h2>Chiến lược</h2>
                 <div class="card-grid" id="right-grid">
                     <!-- Cards will be injected by JS -->
                 </div>
@@ -57,6 +57,8 @@
 
         <aside class="results-sidebar">
             <h3>Lịch sử lượt chơi</h3>
+            <button id="confirm-btn" class="confirm-btn hidden">Xác nhận</button>
+            <!-- <button id="finish-btn" class="finish-btn secondary-btn">Hoàn thành & So sánh</button> -->
             <div id="results-list" class="results-list">
                 <p class="empty-msg">Chưa có kết quả nào được lưu.</p>
             </div>
@@ -75,4 +77,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>

@@ -1,16 +1,16 @@
 // 1. Data Definitions
 const leftCardsData = [
-    { id: 'L1', text: '1 + 1', content: '1 + 1' },
-    { id: 'L2', text: '5 - 2', content: '5 - 2' },
-    { id: 'L3', text: '4 x 3', content: '4 x 3' },
-    { id: 'L4', text: '10 / 2', content: '10 / 2' }
+    { id: 'L1', text: 'Việc gì cũng muốn làm nhưng chẳng biết bắt đầu từ đâu', content: 'Việc gì cũng muốn làm nhưng chẳng biết bắt đầu từ đâu' },
+    { id: 'L2', text: 'Cảm thấy mệt mỏi, uể oải dù không làm gì nhiều', content: 'Cảm thấy mệt mỏi, uể oải dù không làm gì nhiều' },
+    { id: 'L3', text: 'Tim đập nhanh, lo lắng âm ỉ trước giờ thi', content: 'Tim đập nhanh, lo lắng âm ỉ trước giờ thi' },
+    { id: 'L4', text: 'Định lướt TikTok 5 phút, nhìn lại mất 2 tiếng vô thức', content: 'Định lướt TikTok 5 phút, nhìn lại mất 2 tiếng vô thức' }
 ];
 
 const rightCardsData = [
-    { id: 'R1', text: '2', content: '2' },
-    { id: 'R2', text: '3', content: '3' },
-    { id: 'R3', text: '12', content: '12' },
-    { id: 'R4', text: '5', content: '5' }
+    { id: 'R1', text: 'Lập danh sách ưu tiên & Làm từng việc một', content: 'Lập danh sách ưu tiên & Làm từng việc một' },
+    { id: 'R2', text: 'Giải tỏa cảm xúc, đi dạo thư giãn', content: 'Giải tỏa cảm xúc, đi dạo thư giãn' },
+    { id: 'R3', text: '"Gọi tên cảm xúc", hít thở sâu giữ bình tĩnh', content: '"Gọi tên cảm xúc", hít thở sâu giữ bình tĩnh' },
+    { id: 'R4', text: 'Tránh tác nhân xao nhãng (Để điện thoại xa)', content: 'Tránh tác nhân xao nhãng (Để điện thoại xa)' }
 ];
 
 // Mappings of correct answers (ID Left to ID Right)
@@ -53,27 +53,38 @@ function initGame() {
 }
 
 function shuffle(array) {
-    return array.sort(() => Math.random() - 0.5);
+    let currentIndex = array.length, randomIndex;
+    while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    }
+    return array;
 }
 
 function renderCards(data, container, side) {
     container.innerHTML = '';
-    // Optional: Shuffle cards if you want variety each time
-    const shuffled = [...data].sort(() => Math.random() - 0.5);
-    
-    shuffled.forEach(cardData => {
+    // Use Fisher-Yates for robust shuffling
+    const dataToShuffle = [...data];
+    const shuffled = shuffle(dataToShuffle);
+
+    shuffled.forEach((cardData, index) => {
         const cardContainer = document.createElement('div');
         cardContainer.className = 'card-container';
-        
+
         const card = document.createElement('div');
         card.className = 'card';
         card.dataset.id = cardData.id;
         card.dataset.side = side;
         card.dataset.text = cardData.text;
 
+        // Generate label: 1, 2, 3... for left, A, B, C... for right
+        const backLabel = side === 'left' ? (index + 1) : String.fromCharCode(65 + index);
+        card.dataset.label = backLabel;
+
         card.innerHTML = `
             <div class="card-face card-front">${cardData.content}</div>
-            <div class="card-face card-back">?</div>
+            <div class="card-face card-back">${backLabel}</div>
         `;
 
         card.addEventListener('click', () => handleCardClick(card));
@@ -84,64 +95,118 @@ function renderCards(data, container, side) {
 
 // 5. Game Logic
 function handleCardClick(card) {
-    if (!gameStarted || previewMode) return;
-    
+    if (!gameStarted || previewMode || card.classList.contains('card-correct')) return;
+
     const side = card.dataset.side;
-    const id = card.dataset.id;
-    
+    const label = card.dataset.label;
+
     if (side === 'left') {
-        // Deselect previous left card
         if (selectedLeft) selectedLeft.classList.remove('selected', 'flipped');
-        
+
         if (selectedLeft === card) {
             selectedLeft = null;
-            leftSelectLabel.innerText = 'Trái: ?';
+            leftSelectLabel.innerText = 'Tình Huống: ?';
         } else {
             selectedLeft = card;
             card.classList.add('selected', 'flipped');
-            leftSelectLabel.innerText = 'Trái: Đã chọn';
+            leftSelectLabel.innerText = `Tình Huống: ${label}`;
         }
     } else {
-        // Deselect previous right card
         if (selectedRight) selectedRight.classList.remove('selected', 'flipped');
-        
+
         if (selectedRight === card) {
             selectedRight = null;
-            rightSelectLabel.innerText = 'Phải: ?';
+            rightSelectLabel.innerText = 'Chiến Lược: ?';
         } else {
             selectedRight = card;
             card.classList.add('selected', 'flipped');
-            rightSelectLabel.innerText = 'Phải: Đã chọn';
+            rightSelectLabel.innerText = `Chiến Lược: ${label}`;
         }
     }
-    
+
+    // Clear previous feedback colors
+    leftSelectLabel.classList.remove('indicator-correct', 'indicator-wrong');
+    rightSelectLabel.classList.remove('indicator-correct', 'indicator-wrong');
+
     checkSelectionStatus();
 }
 
 function checkSelectionStatus() {
     if (selectedLeft && selectedRight) {
-        confirmBtn.classList.remove('hidden');
+        // Automatically validate when both sides are selected
+        validateCurrentMatch();
+    }
+}
+
+function validateCurrentMatch() {
+    const leftId = selectedLeft.dataset.id;
+    const rightId = selectedRight.dataset.id;
+
+    const isCorrect = correctAnswers.some(ans =>
+        ans.leftId === leftId && ans.rightId === rightId
+    );
+
+    if (isCorrect) {
+        leftSelectLabel.classList.add('indicator-correct');
+        rightSelectLabel.classList.add('indicator-correct');
+        selectedLeft.classList.add('card-correct');
+        selectedRight.classList.add('card-correct');
     } else {
-        confirmBtn.classList.add('hidden');
+        leftSelectLabel.classList.add('indicator-wrong');
+        rightSelectLabel.classList.add('indicator-wrong');
+    }
+
+    // Save to history
+    const match = {
+        left: { id: selectedLeft.dataset.id, text: selectedLeft.dataset.text, label: selectedLeft.dataset.label },
+        right: { id: selectedRight.dataset.id, text: selectedRight.dataset.text, label: selectedRight.dataset.label }
+    };
+    userMatches.push(match);
+    updateMatchHistory(isCorrect);
+
+    if (isCorrect) {
+        const pLeft = selectedLeft;
+        const pRight = selectedRight;
+        selectedLeft = null;
+        selectedRight = null;
+        setTimeout(() => {
+            pLeft.classList.remove('selected');
+            pRight.classList.remove('selected');
+            leftSelectLabel.classList.remove('indicator-correct');
+            rightSelectLabel.classList.remove('indicator-correct');
+            leftSelectLabel.innerText = 'Tình Huống: ?';
+            rightSelectLabel.innerText = 'Chiến Lược: ?';
+        }, 1500);
+    } else {
+        setTimeout(() => {
+            resetSelection();
+            leftSelectLabel.classList.remove('indicator-wrong');
+            rightSelectLabel.classList.remove('indicator-wrong');
+        }, 1500);
     }
 }
 
 function startPreview() {
+    // Re-shuffle and re-render cards for each new game
+    initGame();
+
     gameStarted = true;
     previewMode = true;
     startBtn.classList.add('hidden');
     timerDisplay.classList.remove('hidden');
-    
-    // Flip all cards to show fronts
-    document.querySelectorAll('.card').forEach(card => card.classList.add('flipped'));
-    
-    countdown = 60;
+
+    // Flip all cards to show fronts after they are rendered
+    setTimeout(() => {
+        document.querySelectorAll('.card').forEach(card => card.classList.add('flipped'));
+    }, 50); // Small delay to ensure DOM is ready
+
+    countdown = 30;
     countdownEl.innerText = countdown;
-    
+
     timerId = setInterval(() => {
         countdown--;
         countdownEl.innerText = countdown;
-        
+
         if (countdown <= 0) {
             endPreview();
         }
@@ -152,7 +217,7 @@ function endPreview() {
     clearInterval(timerId);
     previewMode = false;
     timerDisplay.classList.add('hidden');
-    
+
     // Flip all cards back to hide fronts
     document.querySelectorAll('.card').forEach(card => card.classList.remove('flipped'));
     alert('Thời gian xem đáp án kết thúc! Bắt đầu chơi thôi.');
@@ -160,86 +225,83 @@ function endPreview() {
 
 function saveMatch() {
     if (!selectedLeft || !selectedRight) return;
-    
+
     const match = {
-        left: { id: selectedLeft.dataset.id, text: selectedLeft.dataset.text },
-        right: { id: selectedRight.dataset.id, text: selectedRight.dataset.text }
+        left: { id: selectedLeft.dataset.id, text: selectedLeft.dataset.text, label: selectedLeft.dataset.label },
+        right: { id: selectedRight.dataset.id, text: selectedRight.dataset.text, label: selectedRight.dataset.label }
     };
-    
+
     userMatches.push(match);
     updateMatchHistory();
     resetSelection();
 }
 
-function updateMatchHistory() {
+function updateMatchHistory(isCorrect) {
     if (userMatches.length === 1) {
         resultsList.innerHTML = '';
     }
-    
+
     const lastMatch = userMatches[userMatches.length - 1];
     const matchItem = document.createElement('div');
-    matchItem.className = 'match-item';
+    matchItem.className = 'match-item detailed-match';
     matchItem.innerHTML = `
-        <span>${lastMatch.left.text}</span>
-        <span class="arrow">↔</span>
-        <span>${lastMatch.right.text}</span>
+        <div class="match-info">
+            <div class="match-pairing">
+                <span class="tag">#${lastMatch.left.label}</span> 
+                <span class="arrow">↔</span> 
+                <span class="tag">#${lastMatch.right.label}</span>
+            </div>
+            <div class="match-texts">
+                <p><strong>Tình huống:</strong> ${lastMatch.left.text}</p>
+                <div class="line-divider"></div>
+                <p><strong>Chiến lược:</strong> ${lastMatch.right.text}</p>
+            </div>
+        </div>
+        <div class="match-status ${isCorrect ? 'status-correct' : 'status-wrong'}">
+            ${isCorrect ? 'Đúng' : 'Sai'}
+        </div>
     `;
     resultsList.appendChild(matchItem);
     resultsList.scrollTop = resultsList.scrollHeight;
 }
 
 function resetSelection() {
-    // Flip selected cards back
     if (selectedLeft) selectedLeft.classList.remove('selected', 'flipped');
     if (selectedRight) selectedRight.classList.remove('selected', 'flipped');
-    
+
     selectedLeft = null;
     selectedRight = null;
-    
-    leftSelectLabel.innerText = 'Trái: ?';
-    rightSelectLabel.innerText = 'Phải: ?';
+
+    leftSelectLabel.innerText = 'Tình Huống: ?';
+    rightSelectLabel.innerText = 'Chiến Lược: ?';
     confirmBtn.classList.add('hidden');
 }
 
-function compareResults() {
-    if (userMatches.length === 0) {
-        alert('Bạn chưa lưu cặp thẻ nào!');
-        return;
-    }
+function resetGameState() {
+    gameStarted = false;
+    previewMode = false;
+    clearInterval(timerId);
+    selectedLeft = null;
+    selectedRight = null;
+    userMatches = [];
+
+    // UI Reset
+    startBtn.classList.remove('hidden');
+    timerDisplay.classList.add('hidden');
+    resultsList.innerHTML = '<p class="empty-msg">Chưa có kết quả nào được lưu.</p>';
+    leftSelectLabel.innerText = 'Tình Huống: ?';
+    rightSelectLabel.innerText = 'Chiến Lược: ?';
+    modal.classList.add('hidden');
     
-    comparisonBody.innerHTML = '';
-    
-    userMatches.forEach((match, index) => {
-        const row = document.createElement('div');
-        row.className = 'comparison-row';
-        
-        // Find if this match is correct
-        const isCorrect = correctAnswers.some(ans => 
-            ans.leftId === match.left.id && ans.rightId === match.right.id
-        );
-        
-        row.innerHTML = `
-            <div class="comp-col"><strong>Trái:</strong> ${match.left.text}</div>
-            <div class="row-divider"></div>
-            <div class="comp-col"><strong>Phải:</strong> ${match.right.text}</div>
-            <span class="status-badge ${isCorrect ? 'status-correct' : 'status-wrong'}">
-                ${isCorrect ? 'Đúng' : 'Sai'}
-            </span>
-        `;
-        comparisonBody.appendChild(row);
-    });
-    
-    modal.classList.remove('hidden');
+    // Initial Render
+    initGame();
 }
 
 // 6. Event Listeners
 startBtn.addEventListener('click', startPreview);
 confirmBtn.addEventListener('click', saveMatch);
-finishBtn.addEventListener('click', compareResults);
 closeModal.addEventListener('click', () => modal.classList.add('hidden'));
-restartBtn.addEventListener('click', () => {
-    location.reload();
-});
+restartBtn.addEventListener('click', resetGameState);
 
 // Init
 initGame();
